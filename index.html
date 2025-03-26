@@ -4,7 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Étude sur la Gestion du BFR - MBA Sorbonne Université</title>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étude sur la Gestion du BFR - MBA Sorbonne Université</title>
+    
+    <!-- Styles et scripts existants -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
+    <!-- Firebase App (la base) est toujours requise et doit être chargée en premier -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    
+    <!-- Ajoutez les produits Firebase que vous voulez utiliser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    
+    <!-- Configuration Firebase -->
+    <script>
+        // Configuration Firebase avec vos identifiants
+        const firebaseConfig = {
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "votre-projet.firebaseapp.com",
+            databaseURL: "https://votre-projet.firebaseio.com",
+            projectId: "votre-projet",
+            storageBucket: "votre-projet.appspot.com",
+            messagingSenderId: "votre-messagingSenderId",
+            appId: "votre-appId"
+        };
+        
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Référence à la base de données
+        const database = firebase.database();
+    </script>
+    
+    <!-- SheetJS pour l'export Excel (optionnel, si vous créez une page admin) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
         :root {
             --primary: #2b6cb0;
@@ -464,7 +501,6 @@
                 <div class="form-row">
                     <label for="main_activity" class="required">Secteur d'activité principal</label>
                     <input type="text" id="main_activity" name="main_activity" required>
-                    <div class="error-message" id="main_activity_error">Ce champ est obligatoire</div>
                 </div>
                 
                 <div class="form-row">
@@ -1041,65 +1077,58 @@
             document.querySelector('.progress-percentage').textContent = `${Math.round(percentage)}%`;
         }
         
-        // Function to handle form submission
-        function handleSubmit(event) {
-            event.preventDefault();
-            
-            if (validateSection(currentSection)) {
-                // Hide the form
+function handleSubmit(event) {
+    event.preventDefault();
+    
+    if (validateSection(currentSection)) {
+        // Obtenir les données du formulaire
+        const formData = new FormData(document.getElementById('bfrForm'));
+        const data = {};
+        
+        // Convertir formData en objet
+        for (const [key, value] of formData.entries()) {
+            // Traiter les cases à cocher (plusieurs valeurs pour la même clé)
+            if (key === 'bfr_challenges' || key === 'bfr_strategies' || key === 'share_data') {
+                if (!data[key]) {
+                    data[key] = [];
+                }
+                data[key].push(value);
+            } else {
+                data[key] = value;
+            }
+        }
+        
+        // Ajouter timestamp
+        data.timestamp = new Date().toISOString();
+        
+        // Générer une clé unique pour cette réponse
+        const newResponseKey = database.ref().child('responses').push().key;
+        
+        // Écrire dans Firebase
+        database.ref('responses/' + newResponseKey).set(data)
+            .then(() => {
+                console.log('Données enregistrées avec succès');
+                
+                // Afficher message de succès
                 document.getElementById(`section${currentSection}`).style.display = 'none';
                 document.getElementById('sectionTabs').style.display = 'none';
                 document.getElementById('navigationDots').style.display = 'none';
-                
-                // Show success message
                 document.getElementById('successMessage').style.display = 'block';
                 
-                // Update progress to 100%
+                // Mettre à jour la progression à 100%
                 document.querySelector('.progress-value').style.width = '100%';
                 document.querySelector('.progress-percentage').textContent = '100%';
                 
-                // Get form data
-                const formData = new FormData(document.getElementById('bfrForm'));
-                const data = {};
-                
-                // Convert form data to JSON
-                for (const [key, value] of formData.entries()) {
-                    // Handle checkbox groups
-                    if (key === 'bfr_challenges' || key === 'bfr_strategies' || key === 'share_data') {
-                        if (!data[key]) {
-                            data[key] = [];
-                        }
-                        data[key].push(value);
-                    } else {
-                        data[key] = value;
-                    }
-                }
-                
-                // Here you would typically send the data to your server
-                console.log('Form data:', data);
-                
-                // If you're using a real server, you might do something like:
-                /*
-                fetch('https://your-api-endpoint.com/submit-survey', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Success:', data);
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                });
-                */
-                
-                // For demonstration, we'll create a CSV download
+                // Également télécharger en CSV comme sauvegarde locale
                 downloadCSV(data);
-            }
-        }
+            })
+            .catch((error) => {
+                console.error('Erreur lors de l\'enregistrement des données:', error);
+                alert('Une erreur est survenue lors de l\'enregistrement des données. Vos réponses ont été téléchargées localement en CSV.');
+                downloadCSV(data);
+            });
+    }
+}
         
         // Function to download form data as CSV
         function downloadCSV(data) {
