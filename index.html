@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étude sur la Gestion du BFR - MBA Sorbonne Université</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary: #2b6cb0;
+            --primary-dark: #1d4ed8;
+            --secondary: #f4f5f7;
+            --text: #333333;
+            --light-text: #666666;
+            --border: #dddddd;
+            --success: #48bb78;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            color: var(--text);
+            line-height: 1.6;
+            background-color: #f9fafb;
+            padding-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-value {
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .intro {
+            background-color: white;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin: 2rem 0 1rem;
+            font-size: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        .highlight {
+            background-color: #fffde7;
+            padding: 1rem;
+            border-left: 4px solid #ffc107;
+            margin: 1rem 0;
+        }
+
+        .form-section {
+            background-color: white;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-row {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .radio-group, .checkbox-group {
+            margin-top: 0.5rem;
+        }
+
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .radio-option input, .checkbox-option input {
+            margin-right: 0.5rem;
+            width: auto;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button.primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        button.primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        button.secondary {
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        button.secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        .button-group button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .required:after {
+            content: " *";
+            color: #e53e3e;
+        }
+
+        .error-message {
+            color: #e53e3e;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .success-icon {
+            color: var(--success);
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .optional {
+            color: var(--light-text);
+            font-size: 0.875rem;
+            font-weight: normal;
+            margin-left: 0.25rem;
+        }
+
+        .tooltip {
+            display: inline-block;
+            position: relative;
+            margin-left: 0.5rem;
+            cursor: help;
+        }
+
+        .tooltip-icon {
+            background-color: var(--light-text);
+            color: white;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .tooltip-text {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            width: 200px;
+            font-size: 0.75rem;
+            display: none;
+            z-index: 1;
+        }
+
+        .tooltip:hover .tooltip-text {
+            display: block;
+        }
+
+        .section-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+
+        .section-tab {
+            padding: 0.75rem 1rem;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .section-tab.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .section-tab:hover:not(.active) {
+            background-color: #e2e8f0;
+        }
+
+        .navigation-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            transition: background-color 0.2s;
+        }
+
+        .dot.active {
+            background-color: var(--primary);
+        }
+
+        .years-input-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .year-column {
+            flex: 1;
+        }
+
+        .year-label {
+            text-align: center;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-name {
+            flex: 1;
+            padding: 0.5rem;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-button {
+            padding: 0.5rem 1rem;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .progress-container {
+                max-width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column-reverse;
+                gap: 1rem;
+            }
+
+            .button-group button {
+                width: 100%;
+            }
+
+            .years-input-group {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container header-content">
+            <div class="logo">Étude BFR - MBA Sorbonne Université</div>
+            <div class="progress-container">
+                <div class="progress-text">
+                    <span class="progress-label">Progression</span>
+                    <span class="progress-percentage">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-value" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="intro">
+            <h1>Étude sur la gestion du BFR dans le secteur de l'architecture et de l'ingénierie</h1>
+            <p>Merci de participer à cette étude dans le cadre du mémoire de MBA Master MAE à l'IAE de Paris intitulé : "Gestion du BFR : quelles stratégies pour garantir la stabilité financière des Petites et Moyennes Entreprises du secteur de l'architecture et de l'ingénierie de la construction ?"</p>
+            
+            <h2>Présentation du sujet</h2>
+            <p>Selon une étude du groupe BPCE, en 2023, en France, environ 25 à 30 % des dépôts de bilan de TPE/PME étaient spécifiquement attribuables à un défaut de trésorerie.</p>
+            <p>Dans le cadre des recherches engagées pour ce mémoire, lors de nos échanges avec des dirigeant·es d'agences d'architecture et de bureau d'études, nous avons constaté que cette problématique est largement partagée par les acteurs du secteur de l'architecture, des études techniques, de l'urbanisme et du paysage.</p>
+            <p>L'objet de notre mémoire est d'étudier les raisons pour lesquelles ces entreprises se confrontent à ces difficultés afin de tenter de définir des stratégies adaptées pour maîtriser le Besoin en Fonds de Roulement de ces sociétés.</p>
+            
+            <div class="highlight">
+                <p><strong>Définition</strong> : Le Besoin en fonds de roulement (BFR) est le montant de trésorerie nécessaire pour avancer ces charges avant d'être payé par les clients.</p>
+            </div>
+            
+            <p><strong>Vos réponses resteront strictement confidentielles et anonymes.</strong></p>
+            
+            <button class="primary" onclick="startSurvey()">Commencer le questionnaire</button>
+        </div>
+
+        <div class="section-tabs" id="sectionTabs">
+            <div class="section-tab active" data-section="section1">Informations générales</div>
+            <div class="section-tab" data-section="section2">Gestion du BFR</div>
+            <div class="section-tab" data-section="section3">Impact sur la stabilité financière</div>
+            <div class="section-tab" data-section="section4">Perspectives</div>
+        </div>
+
+        <form id="bfrForm">
+            <!-- Section 1: Informations Générales -->
+            <div class="form-section active" id="section1">
+                <h2>Informations Générales sur l'Entreprise</h2>
+                
+                <div class="form-row">
+                    <label for="company_name">Nom de l'entreprise <span class="optional">(optionnel)</span></label>
+                    <input type="text" id="company_name" name="company_name">
+                </div>
+                
+                <div class="form-row">
+                    <label for="headquarters">Adresse du siège social</label>
+                    <input type="text" id="headquarters" name="headquarters">
+                </div>
+                
+                <div class="form-row">
+                    <label for="secondary_addresses">Adresses secondaires <span class="optional">(optionnel)</span></label>
+                    <textarea id="secondary_addresses" name="secondary_addresses"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="main_activity" class="required">Secteur d'activité principal</label>
+                    <input type="text" id="main_activity" name="main_activity" required>
+                    <div class="error-message" id="main_activity_error">Ce champ est obligatoire</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="creation_year" class="required">Année de création de l'entreprise</label>
+                    <input type="number" id="creation_year" name="creation_year" min="1900" max="2025" required>
+                    <div class="error-message" id="creation_year_error">Veuillez entrer une année valide</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="employees" class="required">Effectif salarié·es</label>
+                    <input type="number" id="employees" name="employees" min="0" required>
+                    <div class="error-message" id="employees_error">Veuillez entrer un nombre valide</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="partners" class="required">Nombre d'associé·es</label>
+                    <input type="number" id="partners" name="partners" min="0" required>
+                    <div class="error-message" id="partners_error">Veuillez entrer un nombre valide</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="geographic_area" class="required">Zone géographique d'intervention</label>
+                    <input type="text" id="geographic_area" name="geographic_area" required>
+                    <div class="error-message" id="geographic_area_error">Ce champ est obligatoire</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="respondent_position" class="required">Fonction du répondant au sein de l'entreprise</label>
+                    <input type="text" id="respondent_position" name="respondent_position" required>
+                    <div class="error-message" id="respondent_position_error">Ce champ est obligatoire</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="education">Formation initiale / complémentaires de l'interviewé·e</label>
+                    <textarea id="education" name="education"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="position_time">Depuis combien de temps occupez-vous ce poste ?</label>
+                    <input type="text" id="position_time" name="position_time">
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">L'entreprise dispose-t-elle d'un service financier structuré ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="finance_dept_yes" name="finance_dept" value="Oui" required>
+                            <label for="finance_dept_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="finance_dept_no" name="finance_dept" value="Non">
+                            <label for="finance_dept_no">Non</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="finance_dept_partial" name="finance_dept" value="Partiellement">
+                            <label for="finance_dept_partial">Partiellement (externalisation de certaines fonctions)</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="finance_dept_error">Veuillez sélectionner une option</div>
+                </div>
+
+                <div class="form-row">
+                    <h3>Informations financières des 3 dernières années</h3>
+                    <div class="years-input-group">
+                        <div class="year-column">
+                            <div class="year-label">2023</div>
+                            <div class="form-row">
+                                <label for="revenue_2023">Chiffre d'affaires</label>
+                                <input type="number" id="revenue_2023" name="revenue_2023" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="expenses_2023">Charges annuelles</label>
+                                <input type="number" id="expenses_2023" name="expenses_2023" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="result_2023">Résultat (RCAI)</label>
+                                <input type="number" id="result_2023" name="result_2023">
+                            </div>
+                        </div>
+                        <div class="year-column">
+                            <div class="year-label">2022</div>
+                            <div class="form-row">
+                                <label for="revenue_2022">Chiffre d'affaires</label>
+                                <input type="number" id="revenue_2022" name="revenue_2022" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="expenses_2022">Charges annuelles</label>
+                                <input type="number" id="expenses_2022" name="expenses_2022" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="result_2022">Résultat (RCAI)</label>
+                                <input type="number" id="result_2022" name="result_2022">
+                            </div>
+                        </div>
+                        <div class="year-column">
+                            <div class="year-label">2021</div>
+                            <div class="form-row">
+                                <label for="revenue_2021">Chiffre d'affaires</label>
+                                <input type="number" id="revenue_2021" name="revenue_2021" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="expenses_2021">Charges annuelles</label>
+                                <input type="number" id="expenses_2021" name="expenses_2021" min="0">
+                            </div>
+                            <div class="form-row">
+                                <label for="result_2021">Résultat (RCAI)</label>
+                                <input type="number" id="result_2021" name="result_2021">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="monthly_expenses">Charges mensuelles moyennes (sur les 36 derniers mois)</label>
+                    <input type="number" id="monthly_expenses" name="monthly_expenses" min="0">
+                </div>
+                
+                <div class="form-row">
+                    <label for="monthly_balance">Solde trésorerie moyen en fin de mois (sur les 36 derniers mois)</label>
+                    <input type="number" id="monthly_balance" name="monthly_balance">
+                </div>
+                
+                <div class="button-group">
+                    <div></div> <!-- Empty div for spacing -->
+                    <button type="button" class="primary" onclick="nextSection(1)">Suivant</button>
+                </div>
+            </div>
+
+            <!-- Section 2: Gestion du BFR -->
+            <div class="form-section" id="section2">
+                <h2>Gestion du Besoin en Fonds de Roulement (BFR)</h2>
+                
+                <div class="form-row">
+                    <label class="required">Comment décririez-vous la gestion du BFR dans votre entreprise ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_management_very_good" name="bfr_management" value="Très bien maîtrisée" required>
+                            <label for="bfr_management_very_good">Très bien maîtrisée</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_management_good" name="bfr_management" value="Plutôt bien maîtrisée">
+                            <label for="bfr_management_good">Plutôt bien maîtrisée</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_management_poor" name="bfr_management" value="Peu maîtrisée">
+                            <label for="bfr_management_poor">Peu maîtrisée</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_management_very_poor" name="bfr_management" value="Pas du tout maîtrisée">
+                            <label for="bfr_management_very_poor">Pas du tout maîtrisée</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="bfr_management_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">Quels sont les principaux défis liés à la gestion du BFR dans votre entreprise ?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_deposits" name="bfr_challenges" value="Absence d'acomptes">
+                            <label for="bfr_challenge_deposits">Absence d'acomptes</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_client_payment" name="bfr_challenges" value="Délais de paiement des clients trop longs">
+                            <label for="bfr_challenge_client_payment">Délais de paiement des clients trop longs</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_supplier_payment" name="bfr_challenges" value="Délais de règlement des fournisseurs trop courts">
+                            <label for="bfr_challenge_supplier_payment">Délais de règlement des fournisseurs trop courts</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_financing" name="bfr_challenges" value="Difficulté d'accès au financement">
+                            <label for="bfr_challenge_financing">Difficulté d'accès au financement</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_forecast" name="bfr_challenges" value="Manque de prévisions financières précises">
+                            <label for="bfr_challenge_forecast">Manque de prévisions financières précises</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_study_duration" name="bfr_challenges" value="Durée des phases d'études">
+                            <label for="bfr_challenge_study_duration">Durée des phases d'études</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_public_contracts" name="bfr_challenges" value="Contraintes liées aux contrats de marchés publics">
+                            <label for="bfr_challenge_public_contracts">Contraintes liées aux contrats de marchés publics</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_cash" name="bfr_challenges" value="Difficultés à constituer une trésorerie suffisante">
+                            <label for="bfr_challenge_cash">Difficultés à constituer une trésorerie suffisante</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_challenge_other" name="bfr_challenges" value="Autre">
+                            <label for="bfr_challenge_other">Autre</label>
+                        </div>
+                        <div id="bfr_challenge_other_div" style="display: none; margin-top: 0.5rem;">
+                            <label for="bfr_challenge_other_text">Précisez :</label>
+                            <input type="text" id="bfr_challenge_other_text" name="bfr_challenge_other_text">
+                        </div>
+                    </div>
+                    <div class="error-message" id="bfr_challenges_error">Veuillez sélectionner au moins une option</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="billing_cycles">Comment gérez-vous les cycles de facturation dans votre entreprise ?</label>
+                    <textarea id="billing_cycles" name="billing_cycles"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label>Quelles stratégies mettez-vous en place pour optimiser votre BFR ?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_client_negotiation" name="bfr_strategies" value="Négociation des délais de paiement avec les clients">
+                            <label for="bfr_strategy_client_negotiation">Négociation des délais de paiement avec les clients</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_supplier_negotiation" name="bfr_strategies" value="Négociation des délais de paiement avec les fournisseurs">
+                            <label for="bfr_strategy_supplier_negotiation">Négociation des délais de paiement avec les fournisseurs</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_financing" name="bfr_strategies" value="Recours à des solutions de financement (escompte, affacturage, lignes de crédit…)">
+                            <label for="bfr_strategy_financing">Recours à des solutions de financement (escompte, affacturage, lignes de crédit…)</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_automation" name="bfr_strategies" value="Automatisation des processus de gestion financière">
+                            <label for="bfr_strategy_automation">Automatisation des processus de gestion financière</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_monitoring" name="bfr_strategies" value="Suivi rigoureux des échéances de paiement par les clients">
+                            <label for="bfr_strategy_monitoring">Suivi rigoureux des échéances de paiement par les clients</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_outsourcing" name="bfr_strategies" value="Externalisation de certaines fonctions pour réduire les coûts fixes">
+                            <label for="bfr_strategy_outsourcing">Externalisation de certaines fonctions pour réduire les coûts fixes</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_kpi" name="bfr_strategies" value="Mise en place d'indicateurs de performance pour le suivi du BFR">
+                            <label for="bfr_strategy_kpi">Mise en place d'indicateurs de performance pour le suivi du BFR</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="bfr_strategy_other" name="bfr_strategies" value="Autre">
+                            <label for="bfr_strategy_other">Autre</label>
+                        </div>
+                        <div id="bfr_strategy_other_div" style="display: none; margin-top: 0.5rem;">
+                            <label for="bfr_strategy_other_text">Précisez :</label>
+                            <input type="text" id="bfr_strategy_other_text" name="bfr_strategy_other_text">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="financial_software">Utilisez-vous des logiciels de gestion financière ou un ERP ? Si oui, lesquels ?</label>
+                    <textarea id="financial_software" name="financial_software"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="secondary" onclick="prevSection(2)">Précédent</button>
+                    <button type="button" class="primary" onclick="nextSection(2)">Suivant</button>
+                </div>
+            </div>
+
+            <!-- Section 3: Impact sur la stabilité financière -->
+            <div class="form-section" id="section3">
+                <h2>Impact de la Gestion du BFR sur la Stabilité Financière</h2>
+                
+                <div class="form-row">
+                    <label class="required">Avez-vous déjà rencontré des difficultés financières liées à un déséquilibre du BFR ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="financial_difficulties_yes" name="financial_difficulties" value="Oui" required>
+                            <label for="financial_difficulties_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="financial_difficulties_no" name="financial_difficulties" value="Non">
+                            <label for="financial_difficulties_no">Non</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="financial_difficulties_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row" id="financial_difficulties_consequences_div" style="display: none;">
+                    <label for="financial_difficulties_consequences">Quelles en ont été les conséquences ?</label>
+                    <textarea id="financial_difficulties_consequences" name="financial_difficulties_consequences"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">Disposez-vous d'un tableau de bord spécifique pour piloter le BFR ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_dashboard_yes" name="bfr_dashboard" value="Oui" required>
+                            <label for="bfr_dashboard_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_dashboard_no" name="bfr_dashboard" value="Non">
+                            <label for="bfr_dashboard_no">Non</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="bfr_dashboard_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row" id="bfr_dashboard_indicators_div" style="display: none;">
+                    <label for="bfr_dashboard_indicators">Quels indicateurs suivez-vous en priorité ?</label>
+                    <textarea id="bfr_dashboard_indicators" name="bfr_dashboard_indicators"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="management_control">Disposez-vous d'un outil de contrôle de gestion (suivi du temps passé vs temps budgété) ?</label>
+                    <textarea id="management_control" name="management_control"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="bfr_problem_example">Avez-vous un exemple concret d'un problème de BFR ayant impacté votre entreprise ? Comment avez-vous résolu cette situation ?</label>
+                    <textarea id="bfr_problem_example" name="bfr_problem_example"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="invoice_collection_process">Quel est votre process de relance des factures impayées ?</label>
+                    <textarea id="invoice_collection_process" name="invoice_collection_process"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="bfr_strategic_decisions">Comment intégrez-vous la gestion du BFR dans vos décisions stratégiques ?</label>
+                    <textarea id="bfr_strategic_decisions" name="bfr_strategic_decisions"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="bfr_best_practices">Selon vous, quelles sont les meilleures pratiques pour garantir une bonne gestion du BFR dans votre secteur ? Quels conseils donneriez-vous à une PME du secteur pour améliorer son BFR et assurer sa stabilité financière ?</label>
+                    <textarea id="bfr_best_practices" name="bfr_best_practices"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="secondary" onclick="prevSection(3)">Précédent</button>
+                    <button type="button" class="primary" onclick="nextSection(3)">Suivant</button>
+                </div>
+            </div>
+
+            <!-- Section 4: Perspectives et Améliorations -->
+            <div class="form-section" id="section4">
+                <h2>Perspectives et Améliorations</h2>
+                
+                <div class="form-row">
+                    <label for="bfr_innovations">Selon vous, quelles innovations financières, contractuelles ou technologiques pourraient améliorer la gestion du BFR ?</label>
+                    <textarea id="bfr_innovations" name="bfr_innovations"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">Pensez-vous que les dispositifs de soutien public (prêts garantis, subventions…) sont adaptés aux besoins des PME de votre secteur ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="public_support_yes" name="public_support" value="Oui" required>
+                            <label for="public_support_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="public_support_no" name="public_support" value="Non">
+                            <label for="public_support_no">Non</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="public_support_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="public_support_why">Pourquoi ?</label>
+                    <textarea id="public_support_why" name="public_support_why"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">Travaillez-vous avec des partenaires financiers (banques, investisseurs) pour optimiser votre BFR ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="financial_partners_yes" name="financial_partners" value="Oui" required>
+                            <label for="financial_partners_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="financial_partners_no" name="financial_partners" value="Non">
+                            <label for="financial_partners_no">Non</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="financial_partners_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row" id="financial_solutions_div" style="display: none;">
+                    <label for="financial_solutions">Si oui, quelles solutions sont les plus efficaces selon vous ?</label>
+                    <textarea id="financial_solutions" name="financial_solutions"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label class="required">Avez-vous déjà participé à des formations ou reçu un accompagnement sur la gestion du BFR ?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_training_yes" name="bfr_training" value="Oui" required>
+                            <label for="bfr_training_yes">Oui</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bfr_training_no" name="bfr_training" value="Non">
+                            <label for="bfr_training_no">Non</label>
+                        </div>
+                    </div>
+                    <div class="error-message" id="bfr_training_error">Veuillez sélectionner une option</div>
+                </div>
+                
+                <div class="form-row" id="bfr_training_benefits_div" style="display: none;">
+                    <label for="bfr_training_benefits">Si oui, quels ont été les apports principaux ?</label>
+                    <textarea id="bfr_training_benefits" name="bfr_training_benefits"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="bfr_comparison">Comment, selon vous, votre gestion du BFR se compare-t-elle à celle de vos concurrents ?</label>
+                    <textarea id="bfr_comparison" name="bfr_comparison"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label for="macro_economic_impact">Selon vous, quels sont les impacts de la situation macro-économique sur les problématiques de gestion du BFR d'une entreprise comme la vôtre ?</label>
+                    <textarea id="macro_economic_impact" name="macro_economic_impact"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <label>Accepteriez-vous de nous partager les données suivantes :</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="share_balance_sheets" name="share_data" value="3 derniers bilans comptables">
+                            <label for="share_balance_sheets">3 derniers bilans comptables</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="share_cash_flow" name="share_data" value="Plans de trésorerie des 3 dernières années">
+                            <label for="share_cash_flow">Plans de trésorerie des 3 dernières années</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="respondent_email">Votre email (si vous souhaitez recevoir une copie de vos réponses et/ou les résultats de l'étude)</label>
+                    <input type="email" id="respondent_email" name="respondent_email">
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="secondary" onclick="prevSection(4)">Précédent</button>
+                    <button type="submit" class="primary">Soumettre le questionnaire</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="navigation-dots" id="navigationDots">
+            <div class="dot active" data-section="1"></div>
+            <div class="dot" data-section="2"></div>
+            <div class="dot" data-section="3"></div>
+            <div class="dot" data-section="4"></div>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✓</div>
+            <h2>Merci pour votre participation !</h2>
+            <p>Vos réponses ont été enregistrées avec succès. Elles contribueront à notre recherche sur les stratégies de gestion du BFR dans les PME du secteur de l'architecture et de l'ingénierie.</p>
+            <p>Si vous avez indiqué votre email, vous recevrez prochainement une copie de vos réponses.</p>
+            <button class="primary" onclick="window.location.reload()">Retour à l'accueil</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSection = 1;
+        const totalSections = 4;
+        
+        // Function to start the survey
+        function startSurvey() {
+            document.querySelector('.intro').style.display = 'none';
+            document.getElementById('sectionTabs').style.display = 'flex';
+            document.getElementById('navigationDots').style.display = 'flex';
+            document.getElementById('section1').style.display = 'block';
+            updateProgress(1);
+        }
+        
+        // Function to navigate to the next section
+        function nextSection(current) {
+            if (validateSection(current)) {
+                document.getElementById(`section${current}`).style.display = 'none';
+                document.getElementById(`section${current + 1}`).style.display = 'block';
+                currentSection = current + 1;
+                
+                // Update active tab
+                document.querySelectorAll('.section-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`.section-tab[data-section="section${currentSection}"]`).classList.add('active');
+                
+                // Update navigation dots
+                document.querySelectorAll('.dot').forEach(dot => {
+                    dot.classList.remove('active');
+                });
+                document.querySelector(`.dot[data-section="${currentSection}"]`).classList.add('active');
+                
+                // Update progress bar
+                updateProgress(currentSection);
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        // Function to navigate to the previous section
+        function prevSection(current) {
+            document.getElementById(`section${current}`).style.display = 'none';
+            document.getElementById(`section${current - 1}`).style.display = 'block';
+            currentSection = current - 1;
+            
+            // Update active tab
+            document.querySelectorAll('.section-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.section-tab[data-section="section${currentSection}"]`).classList.add('active');
+            
+            // Update navigation dots
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.classList.remove('active');
+            });
+            document.querySelector(`.dot[data-section="${currentSection}"]`).classList.add('active');
+            
+            // Update progress bar
+            updateProgress(currentSection);
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to validate the current section
+        function validateSection(section) {
+            let isValid = true;
+            
+            // Reset all error messages
+            const errorMessages = document.querySelectorAll(`#section${section} .error-message`);
+            errorMessages.forEach(msg => {
+                msg.style.display = 'none';
+            });
+            
+            // Validate required fields for the current section
+            const requiredFields = document.querySelectorAll(`#section${section} [required]`);
+            requiredFields.forEach(field => {
+                if (field.type === 'radio') {
+                    const name = field.name;
+                    const checked = document.querySelector(`input[name="${name}"]:checked`);
+                    if (!checked) {
+                        document.getElementById(`${name}_error`).style.display = 'block';
+                        isValid = false;
+                    }
+                } else if (field.type === 'checkbox') {
+                    const name = field.name;
+                    const checked = document.querySelector(`input[name="${name}"]:checked`);
+                    if (!checked) {
+                        document.getElementById(`${name}_error`).style.display = 'block';
+                        isValid = false;
+                    }
+                } else {
+                    if (!field.value.trim()) {
+                        document.getElementById(`${field.id}_error`).style.display = 'block';
+                        isValid = false;
+                    }
+                }
+            });
+            
+            // Special validation for checkboxes groups
+            if (section === 2) {
+                const bfrChallenges = document.querySelectorAll('input[name="bfr_challenges"]:checked');
+                if (bfrChallenges.length === 0) {
+                    document.getElementById('bfr_challenges_error').style.display = 'block';
+                    isValid = false;
+                }
+            }
+            
+            return isValid;
+        }
+        
+        // Function to update progress bar
+        function updateProgress(current) {
+            const percentage = ((current - 1) / totalSections) * 100;
+            document.querySelector('.progress-value').style.width = `${percentage}%`;
+            document.querySelector('.progress-percentage').textContent = `${Math.round(percentage)}%`;
+        }
+        
+        // Function to handle form submission
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (validateSection(currentSection)) {
+                // Hide the form
+                document.getElementById(`section${currentSection}`).style.display = 'none';
+                document.getElementById('sectionTabs').style.display = 'none';
+                document.getElementById('navigationDots').style.display = 'none';
+                
+                // Show success message
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // Update progress to 100%
+                document.querySelector('.progress-value').style.width = '100%';
+                document.querySelector('.progress-percentage').textContent = '100%';
+                
+                // Get form data
+                const formData = new FormData(document.getElementById('bfrForm'));
+                const data = {};
+                
+                // Convert form data to JSON
+                for (const [key, value] of formData.entries()) {
+                    // Handle checkbox groups
+                    if (key === 'bfr_challenges' || key === 'bfr_strategies' || key === 'share_data') {
+                        if (!data[key]) {
+                            data[key] = [];
+                        }
+                        data[key].push(value);
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                
+                // Here you would typically send the data to your server
+                console.log('Form data:', data);
+                
+                // If you're using a real server, you might do something like:
+                /*
+                fetch('https://your-api-endpoint.com/submit-survey', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+                */
+                
+                // For demonstration, we'll create a CSV download
+                downloadCSV(data);
+            }
+        }
+        
+        // Function to download form data as CSV
+        function downloadCSV(data) {
+            // Convert data to CSV format
+            const csvRows = [];
+            
+            // Add headers
+            const headers = Object.keys(data);
+            csvRows.push(headers.join(','));
+            
+            // Add values (handle arrays)
+            const values = headers.map(header => {
+                const value = data[header];
+                if (Array.isArray(value)) {
+                    return `"${value.join('; ')}"`;
+                }
+                if (typeof value === 'string' && value.includes(',')) {
+                    return `"${value}"`;
+                }
+                return value;
+            });
+            csvRows.push(values.join(','));
+            
+            // Create CSV content
+            const csvContent = csvRows.join('\n');
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'reponses_questionnaire_bfr.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize form
+            document.getElementById('bfrForm').addEventListener('submit', handleSubmit);
+            
+            // Section tabs navigation
+            document.querySelectorAll('.section-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const section = this.getAttribute('data-section').replace('section', '');
+                    
+                    // Only allow navigation to previous or current sections
+                    if (parseInt(section) <= currentSection) {
+                        document.querySelectorAll('.form-section').forEach(sec => {
+                            sec.style.display = 'none';
+                        });
+                        document.getElementById(`section${section}`).style.display = 'block';
+                        
+                        // Update active tab
+                        document.querySelectorAll('.section-tab').forEach(t => {
+                            t.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        
+                        // Update current section
+                        currentSection = parseInt(section);
+                        
+                        // Update navigation dots
+                        document.querySelectorAll('.dot').forEach(dot => {
+                            dot.classList.remove('active');
+                        });
+                        document.querySelector(`.dot[data-section="${currentSection}"]`).classList.add('active');
+                    }
+                });
+            });
+            
+            // Navigation dots
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.addEventListener('click', function() {
+                    const section = this.getAttribute('data-section');
+                    
+                    // Only allow navigation to previous or current sections
+                    if (parseInt(section) <= currentSection) {
+                        document.querySelectorAll('.form-section').forEach(sec => {
+                            sec.style.display = 'none';
+                        });
+                        document.getElementById(`section${section}`).style.display = 'block';
+                        
+                        // Update active tab
+                        document.querySelectorAll('.section-tab').forEach(tab => {
+                            tab.classList.remove('active');
+                        });
+                        document.querySelector(`.section-tab[data-section="section${section}"]`).classList.add('active');
+                        
+                        // Update current section
+                        currentSection = parseInt(section);
+                        
+                        // Update navigation dots
+                        document.querySelectorAll('.dot').forEach(d => {
+                            d.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                    }
+                });
+            });
+            
+            // Show/hide conditional fields
+            document.getElementById('bfr_challenge_other').addEventListener('change', function() {
+                document.getElementById('bfr_challenge_other_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('bfr_strategy_other').addEventListener('change', function() {
+                document.getElementById('bfr_strategy_other_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('financial_difficulties_yes').addEventListener('change', function() {
+                document.getElementById('financial_difficulties_consequences_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('financial_difficulties_no').addEventListener('change', function() {
+                document.getElementById('financial_difficulties_consequences_div').style.display = 'none';
+            });
+            
+            document.getElementById('bfr_dashboard_yes').addEventListener('change', function() {
+                document.getElementById('bfr_dashboard_indicators_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('bfr_dashboard_no').addEventListener('change', function() {
+                document.getElementById('bfr_dashboard_indicators_div').style.display = 'none';
+            });
+            
+            document.getElementById('financial_partners_yes').addEventListener('change', function() {
+                document.getElementById('financial_solutions_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('financial_partners_no').addEventListener('change', function() {
+                document.getElementById('financial_solutions_div').style.display = 'none';
+            });
+            
+            document.getElementById('bfr_training_yes').addEventListener('change', function() {
+                document.getElementById('bfr_training_benefits_div').style.display = this.checked ? 'block' : 'none';
+            });
+            
+            document.getElementById('bfr_training_no').addEventListener('change', function() {
+                document.getElementById('bfr_training_benefits_div').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
